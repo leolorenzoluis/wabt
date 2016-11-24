@@ -40,11 +40,19 @@
 static const char* s_section_name[] = {WASM_FOREACH_BINARY_SECTION(V)};
 #undef V
 
+typedef struct Reloc {
+  WasmReloc type;
+  uint32_t offset;
+} Reloc;
+WASM_DEFINE_VECTOR(reloc, Reloc);
+
 typedef struct Context {
   WasmAllocator* allocator;
   WasmStream stream;
   WasmStream* log_stream;
   const WasmWriteBinaryOptions* options;
+
+  RelocVector relocations;
 
   size_t last_section_offset;
   size_t last_section_leb_size_guess;
@@ -113,6 +121,13 @@ static void write_u32_leb128(WasmStream* stream,
                              uint32_t value,
                              const char* desc) {
   uint32_t length = write_u32_leb128_at(stream, stream->offset, value, desc);
+  stream->offset += length;
+}
+
+static void write_fixed_u32_leb128(WasmStream* stream,
+                             uint32_t value,
+                             const char* desc) {
+  uint32_t length = write_fixed_u32_leb128_at(stream, stream->offset, value, desc);
   stream->offset += length;
 }
 
@@ -269,6 +284,15 @@ static void write_expr_list(Context* ctx,
                             const WasmFunc* func,
                             const WasmExpr* first_expr);
 
+static void add_reloc(Context* ctx, WasmReloc reloc_type, uint32_t offset) {
+  Reloc *r = wasm_append_reloc(ctx->allocator, &ctx->relocations);
+  r->type = reloc_type;
+  r->offset = offset;
+  //printf("add reloc %#x\n", offset);
+  // TODO(sbc): add relocations such that they can be written to a user
+  // section at the end.
+}
+
 static void write_expr(Context* ctx,
                        const WasmModule* module,
                        const WasmFunc* func,
@@ -311,7 +335,12 @@ static void write_expr(Context* ctx,
       int index = wasm_get_func_index_by_var(module, &expr->call.var);
       assert(index >= 0 && (size_t)index < module->funcs.size);
       write_opcode(&ctx->stream, WASM_OPCODE_CALL);
-      write_u32_leb128(&ctx->stream, index, "func index");
+      if (ctx->options->linkable) {
+        add_reloc(ctx, WASM_RELOC_FUNC_INDEX_LEB, ctx->stream.offset);
+        write_fixed_u32_leb128(&ctx->stream, index, "func index");
+      } else {
+        write_u32_leb128(&ctx->stream, index, "func index");
+      }
       break;
     }
     case WASM_EXPR_TYPE_CALL_INDIRECT: {
@@ -364,7 +393,12 @@ static void write_expr(Context* ctx,
     case WASM_EXPR_TYPE_GET_GLOBAL: {
       int index = wasm_get_global_index_by_var(module, &expr->get_global.var);
       write_opcode(&ctx->stream, WASM_OPCODE_GET_GLOBAL);
-      write_u32_leb128(&ctx->stream, index, "global index");
+      if (ctx->options->linkable) {
+        add_reloc(ctx, WASM_RELOC_GLOBAL_INDEX, ctx->stream.offset);
+        write_fixed_u32_leb128(&ctx->stream, index, "global index");
+      } else {
+        write_u32_leb128(&ctx->stream, index, "global index");
+      }
       break;
     }
     case WASM_EXPR_TYPE_GET_LOCAL: {
@@ -414,7 +448,12 @@ static void write_expr(Context* ctx,
     case WASM_EXPR_TYPE_SET_GLOBAL: {
       int index = wasm_get_global_index_by_var(module, &expr->get_global.var);
       write_opcode(&ctx->stream, WASM_OPCODE_SET_GLOBAL);
-      write_u32_leb128(&ctx->stream, index, "global index");
+      if (ctx->options->linkable) {
+        add_reloc(ctx, WASM_RELOC_GLOBAL_INDEX, ctx->stream.offset);
+        write_fixed_u32_leb128(&ctx->stream, index, "global index");
+      } else {
+        write_u32_leb128(&ctx->stream, index, "global index");
+      }
       break;
     }
     case WASM_EXPR_TYPE_SET_LOCAL: {
@@ -828,6 +867,16 @@ static void write_module(Context* ctx, const WasmModule* module) {
     end_section(ctx);
 
     wasm_destroy_string_slice_vector(ctx->allocator, &index_to_name);
+  }
+
+  if (ctx->options->linkable) {
+    begin_user_section(ctx, WASM_BINARY_SECTION_RELOC, leb_size_guess);
+    write_u32_leb128(&ctx->stream, ctx->relocations.size, "num relocs");
+    for (i = 0; i < ctx->relocations.size; i++) {
+      write_u32_leb128(&ctx->stream, ctx->relocations.data[i].type, "reloc type");
+      write_u32_leb128(&ctx->stream, ctx->relocations.data[i].offset, "reloc offset");
+    }
+    end_section(ctx);
   }
 }
 

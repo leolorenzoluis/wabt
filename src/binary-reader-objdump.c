@@ -304,6 +304,26 @@ static const char* wasm_type_name(WasmType type) {
   }
 }
 
+static const char* wasm_reloc_name(WasmReloc type) {
+  switch (type) {
+    case WASM_RELOC_FUNC_INDEX_LEB:
+      return "RELOC_FUNC_INDEX_LEB";
+
+    case WASM_RELOC_FUNC_INDEX_SLEB:
+      return "RELOC_FUNC_INDEX_SLEB";
+
+    case WASM_RELOC_GLOBAL_INDEX:
+      return "RELOC_GLOBAL_INDEX";
+
+    case WASM_RELOC_DATA:
+      return "RELOC_DATA";
+
+    default:
+      assert(0);
+      return "INVALID RELOC";
+  }
+}
+
 static WasmResult on_opcode_block_sig(WasmBinaryReaderContext* ctx,
                                       uint32_t num_types,
                                       WasmType* sig_types) {
@@ -503,6 +523,11 @@ static WasmResult on_local_name(uint32_t func_index,
   return WASM_OK;
 }
 
+WasmResult on_reloc(WasmReloc type, uint32_t offset, void* user_data) {
+  print_details(user_data, "  - %-20s offset=%#x\n", wasm_reloc_name(type), offset);
+  return WASM_OK;
+}
+
 static void on_error(WasmBinaryReaderContext* ctx, const char* message) {
   wasm_default_binary_error_callback(ctx->offset, message, ctx->user_data);
 }
@@ -578,6 +603,8 @@ static WasmBinaryReader s_binary_reader = {
     .on_function_names_count = on_count,
     .on_function_name = on_function_name,
     .on_local_name = on_local_name,
+
+    .on_reloc = on_reloc,
 
     .on_init_expr_i32_const_expr = on_init_expr_i32_const_expr,
     .on_init_expr_i64_const_expr = on_init_expr_i64_const_expr,

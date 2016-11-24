@@ -42,6 +42,7 @@ def main(args):
                       action='store_true')
   parser.add_argument('--headers', action='store_true')
   parser.add_argument('--no-check', action='store_true')
+  parser.add_argument('-c', '--compile-only', action='store_true')
   parser.add_argument('--dump-verbose', action='store_true')
   parser.add_argument('--spec', action='store_true')
   parser.add_argument('--no-canonicalize-leb128s', action='store_true')
@@ -59,6 +60,7 @@ def main(args):
     '--no-canonicalize-leb128s': options.no_canonicalize_leb128s,
     '--spec': options.spec,
     '-v': options.verbose,
+    '-c': options.compile_only,
     '--use-libc-allocator': options.use_libc_allocator
   })
 

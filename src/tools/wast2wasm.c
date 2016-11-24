@@ -62,6 +62,7 @@ enum {
   FLAG_HELP,
   FLAG_DUMP_MODULE,
   FLAG_OUTPUT,
+  FLAG_COMPILE_ONLY,
   FLAG_SPEC,
   FLAG_USE_LIBC_ALLOCATOR,
   FLAG_NO_CANONICALIZE_LEB128S,
@@ -98,6 +99,8 @@ static WasmOption s_options[] = {
      "print a hexdump of the module to stdout"},
     {FLAG_OUTPUT, 'o', "output", "FILE", YEP,
      "output file for the generated binary format"},
+    {FLAG_COMPILE_ONLY, 'c', NULL, NULL, NOPE,
+     "compile-only (output a wasm file suitable for linking with others)"},
     {FLAG_SPEC, 0, "spec", NULL, NOPE,
      "parse a file with multiple modules and assertions, like the spec "
      "tests"},
@@ -135,6 +138,10 @@ static void on_option(struct WasmOptionParser* parser,
 
     case FLAG_OUTPUT:
       s_outfile = argument;
+      break;
+
+    case FLAG_COMPILE_ONLY:
+      s_write_binary_options.linkable = WASM_TRUE;
       break;
 
     case FLAG_SPEC:

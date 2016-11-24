@@ -1,0 +1,86 @@
+;;; TOOL: run-wasmdump
+;;; FLAGS: -v -c --headers --dump-verbose
+(module
+  (global i32 (i32.const 1))
+  (func (param i32)
+     get_global 0
+     call 0))
+(;; STDOUT ;;;
+0000000: 0061 736d                                 ; WASM_BINARY_MAGIC
+0000004: 0d00 0000                                 ; WASM_BINARY_VERSION
+; section "TYPE" (1)
+0000008: 01                                        ; section code
+0000009: 00                                        ; section size (guess)
+000000a: 01                                        ; num types
+; type 0
+000000b: 60                                        ; func
+000000c: 01                                        ; num params
+000000d: 7f                                        ; i32
+000000e: 00                                        ; num results
+0000009: 05                                        ; FIXUP section size
+; section "FUNCTION" (3)
+000000f: 03                                        ; section code
+0000010: 00                                        ; section size (guess)
+0000011: 01                                        ; num functions
+0000012: 00                                        ; function 0 signature index
+0000010: 02                                        ; FIXUP section size
+; section "GLOBAL" (6)
+0000013: 06                                        ; section code
+0000014: 00                                        ; section size (guess)
+0000015: 01                                        ; num globals
+0000016: 7f                                        ; i32
+0000017: 00                                        ; global mutability
+0000018: 41                                        ; i32.const
+0000019: 01                                        ; i32 literal
+000001a: 0b                                        ; end
+0000014: 06                                        ; FIXUP section size
+; section "CODE" (10)
+000001b: 0a                                        ; section code
+000001c: 00                                        ; section size (guess)
+000001d: 01                                        ; num functions
+; function body 0
+000001e: 00                                        ; func body size (guess)
+000001f: 00                                        ; local decl count
+0000020: 23                                        ; get_global
+0000021: 8080 8080 00                              ; global index
+0000026: 10                                        ; call
+0000027: 8080 8080 00                              ; func index
+000002c: 0b                                        ; end
+000001e: 0e                                        ; FIXUP func body size
+000001c: 10                                        ; FIXUP section size
+; section "reloc"
+000002d: 00                                        ; user section code
+000002e: 00                                        ; section size (guess)
+000002f: 05                                        ; string length
+0000030: 7265 6c6f 63                             reloc  ; user section name
+0000035: 02                                        ; num relocs
+0000036: 02                                        ; reloc type
+0000037: 21                                        ; reloc offset
+0000038: 00                                        ; reloc type
+0000039: 27                                        ; reloc offset
+000002e: 0b                                        ; FIXUP section size
+call.wasm:	file format wasm 0x00000d
+
+Sections:
+     TYPE start=0x0000000a end=0x0000000f (size=0x00000005) count: 1
+ FUNCTION start=0x00000011 end=0x00000013 (size=0x00000002) count: 1
+   GLOBAL start=0x00000015 end=0x0000001b (size=0x00000006) count: 1
+     CODE start=0x0000001d end=0x0000002d (size=0x00000010) count: 1
+     USER start=0x00000035 end=0x00000040 (size=0x0000000b) 
+Section Details:
+TYPE:
+ - [0] (i32) -> nil
+FUNCTION:
+ - [0] sig=0
+GLOBAL:
+ - init i32=1
+CODE:
+ - func 0
+USER:
+ - name: "reloc"
+
+Code Disassembly:
+func 0
+ 000020: 23 80 80 80 80 00          | get_global 0
+ 000026: 10 80 80 80 80 00          | call 0
+;;; STDOUT ;;)

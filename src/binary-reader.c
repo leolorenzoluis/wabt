@@ -439,6 +439,19 @@ static void handle_user_section(Context* ctx,
       }
     }
     CALLBACK0(end_names_section);
+  } else if (strncmp(section_name->start, WASM_BINARY_SECTION_RELOC,
+             section_name->length) == 0) {
+    CALLBACK_SECTION(begin_reloc_section);
+    uint32_t i, num_relocs;
+    in_u32_leb128(ctx, &num_relocs, "relocation count count");
+    CALLBACK(on_reloc_count, num_relocs);
+    for (i = 0; i < num_relocs; ++i) {
+      uint32_t reloc_type, offset;
+      in_u32_leb128(ctx, &reloc_type, "relocation type");
+      in_u32_leb128(ctx, &offset, "offset");
+      CALLBACK(on_reloc, reloc_type, offset);
+    }
+    CALLBACK0(end_reloc_section);
   }
   CALLBACK_CTX0(end_user_section);
 }
@@ -681,6 +694,9 @@ LOGGING_BEGIN(names_section)
 LOGGING_UINT32(on_function_names_count)
 LOGGING_UINT32_UINT32(on_local_names_count, "index", "count")
 LOGGING_END(names_section)
+LOGGING_BEGIN(reloc_section)
+LOGGING_UINT32(on_reloc_count)
+LOGGING_END(reloc_section)
 LOGGING_UINT32_UINT32(on_init_expr_get_global_expr, "index", "global_index")
 
 static void sprint_limits(char* dst, size_t size, const WasmLimits* limits) {
@@ -1143,6 +1159,10 @@ static WasmBinaryReader s_logging_binary_reader = {
     .on_local_names_count = logging_on_local_names_count,
     .on_local_name = logging_on_local_name,
     .end_names_section = logging_end_names_section,
+
+    .begin_reloc_section = logging_begin_reloc_section,
+    .on_reloc_count = logging_on_reloc_count,
+    .end_reloc_section = logging_end_reloc_section,
 
     .on_init_expr_f32_const_expr = logging_on_init_expr_f32_const_expr,
     .on_init_expr_f64_const_expr = logging_on_init_expr_f64_const_expr,

@@ -26,11 +26,12 @@ struct WasmWriter;
 struct WasmStream;
 
 #define WASM_WRITE_BINARY_OPTIONS_DEFAULT \
-  { NULL, WASM_TRUE, WASM_FALSE }
+  { NULL, WASM_TRUE, WASM_FALSE, WASM_FALSE }
 
 typedef struct WasmWriteBinaryOptions {
   struct WasmStream* log_stream;
   WasmBool canonicalize_lebs;
+  WasmBool linkable;
   WasmBool write_debug_names;
 } WasmWriteBinaryOptions;
 
