@@ -78,6 +78,8 @@ CODE:
  - func 0
 USER:
  - name: "reloc"
+  - RELOC_GLOBAL_INDEX   offset=0x21
+  - RELOC_FUNC_INDEX_LEB offset=0x27
 
 Code Disassembly:
 func 0
