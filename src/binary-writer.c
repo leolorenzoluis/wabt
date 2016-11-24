@@ -288,9 +288,6 @@ static void add_reloc(Context* ctx, WasmReloc reloc_type, uint32_t offset) {
   Reloc *r = wasm_append_reloc(ctx->allocator, &ctx->relocations);
   r->type = reloc_type;
   r->offset = offset;
-  //printf("add reloc %#x\n", offset);
-  // TODO(sbc): add relocations such that they can be written to a user
-  // section at the end.
 }
 
 static void write_expr(Context* ctx,
